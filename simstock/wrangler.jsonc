@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "simstock",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-03-17",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "simstock"
+    }
+  ],
+  "vars": {
+    "AUTH_BASE_URL": "http://localhost:3010"
+  },
+  "d1_databases": [
+    {
+      "binding": "SIMSTOCK_DB",
+      "database_name": "simstock",
+      "database_id": "7a4b5dcb-0341-4f28-a09d-77dac6a66c7a",
+      "preview_database_id": "simstock-preview"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "simstock-opennext-cache",
+      "preview_bucket_name": "simstock-opennext-cache-preview"
+    },
+    {
+      "binding": "SIMSTOCK_EXPORTS",
+      "bucket_name": "simstock-exports",
+      "preview_bucket_name": "simstock-exports-preview"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  }
+}

@@ -1,0 +1,456 @@
+{
+  "generatedAt": "2026-03-16T12:17:35.440251+00:00",
+  "count": 15,
+  "results": [
+    {
+      "assetId": "bovespa",
+      "label": "Bovespa",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "EWZ",
+      "symbol": "ewz.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 35.49,
+          "volume": 40357401.0,
+          "dailyChangePct": -1.7442
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "brent",
+      "label": "Brent Crude",
+      "providerConfigured": "TradingEconomics URL",
+      "yahooSymbol": "BZ=F",
+      "symbol": "bno.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 98.86,
+          "volume": 25561.0,
+          "dailyChangePct": -4.1497
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "copper",
+      "label": "Copper",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "HG=F",
+      "symbol": "cper.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 5.785,
+          "volume": 17301.0,
+          "dailyChangePct": 1.2337
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "corn",
+      "label": "Corn",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "ZC=F",
+      "symbol": "corn.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 461.75,
+          "volume": 48956.0,
+          "dailyChangePct": 2.0442
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "csi300",
+      "label": "CSI 300",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "ASHR",
+      "symbol": "ashr.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 33.53,
+          "volume": 5768479.0,
+          "dailyChangePct": -0.2083
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "dowjones",
+      "label": "Dow Jones",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "^DJI",
+      "symbol": "^dji",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 46558.4688,
+          "volume": 453256742.0,
+          "dailyChangePct": -0.2558
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "eurostoxx50",
+      "label": "EURO STOXX 50",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "FEZ",
+      "symbol": "fez.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 61.9,
+          "volume": 1737176.0,
+          "dailyChangePct": -1.3074
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "gold",
+      "label": "Gold",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "GC=F",
+      "symbol": "gld.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 5007.7998,
+          "volume": 80327.0,
+          "dailyChangePct": -0.8847
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "hangseng",
+      "label": "Hang Seng",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "^HSI",
+      "symbol": "^hsi",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 25834.0195,
+          "volume": 0.0,
+          "dailyChangePct": 1.4467
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "msci-asia",
+      "label": "MSCI Asia Pacific",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "AAXJ",
+      "symbol": "aaxj.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 97.52,
+          "volume": 1215474.0,
+          "dailyChangePct": -0.0615
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "nasdaq100",
+      "label": "Nasdaq-100",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "^NDX",
+      "symbol": "^ndq",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 24380.7344,
+          "volume": 1083291000.0,
+          "dailyChangePct": -0.623
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "nifty50",
+      "label": "Nifty 50",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "INDA",
+      "symbol": "inda.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 48.06,
+          "volume": 11927703.0,
+          "dailyChangePct": -0.9481
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "silver",
+      "label": "Silver",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "SI=F",
+      "symbol": "slv.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 79.165,
+          "volume": 21207.0,
+          "dailyChangePct": -2.1616
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "sp500",
+      "label": "S&P 500",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "^GSPC",
+      "symbol": "^spx",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 6632.1899,
+          "volume": 2964237000.0,
+          "dailyChangePct": -0.6059
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    },
+    {
+      "assetId": "stoxx600",
+      "label": "STOXX Europe 600",
+      "providerConfigured": "Stooq",
+      "yahooSymbol": "VGK",
+      "symbol": "vgk.us",
+      "comparisons": {
+        "yfinance": {
+          "status": "ok",
+          "price": 82.16,
+          "volume": 3366990.0,
+          "dailyChangePct": -1.3685
+        },
+        "stooq": {
+          "status": "invalid"
+        },
+        "alphaVantage": {
+          "status": "missing_key"
+        },
+        "marketData": {
+          "status": "missing_key"
+        },
+        "fmp": {
+          "status": "missing_key"
+        },
+        "iexCloud": {
+          "status": "missing_key"
+        }
+      }
+    }
+  ]
+}
