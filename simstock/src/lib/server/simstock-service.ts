@@ -1156,6 +1156,7 @@ export async function testLlmProfile(profileId: string, prompt: string) {
     settings.llmProfiles.find((item) => item.id === profileId) ??
     settings.llmProfiles[0] ??
     settings.llm;
+  const resolvedApiKey = resolveLlmApiKey(profile);
   const endpoint = profile.endpoint.replace(/\/$/, "");
   const providerName = (profile.provider ?? "").toLowerCase();
   const isClaude = providerName.includes("claude") || endpoint.includes("anthropic");
@@ -1172,11 +1173,11 @@ export async function testLlmProfile(profileId: string, prompt: string) {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
-    if (isClaude && profile.apiKey) {
-      headers["x-api-key"] = profile.apiKey;
+    if (isClaude && resolvedApiKey) {
+      headers["x-api-key"] = resolvedApiKey;
       headers["anthropic-version"] = "2023-06-01";
-    } else if (profile.apiKey) {
-      headers.Authorization = `Bearer ${profile.apiKey}`;
+    } else if (resolvedApiKey) {
+      headers.Authorization = `Bearer ${resolvedApiKey}`;
     }
     const activeModel = isOllama
       ? await resolveOllamaModel(endpoint, profile.model)
