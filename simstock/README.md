@@ -34,6 +34,7 @@ The recommended deployment path right now is:
 Guide:
 
 - [HOSTINGER_VPS_DEPLOY.md](/Users/ruipereira/Documents/New%20project/simstock/HOSTINGER_VPS_DEPLOY.md)
+- [OPERATIONS.md](/Users/ruipereira/Documents/New%20project/simstock/OPERATIONS.md)
 
 ## Cloudflare foundation
 
