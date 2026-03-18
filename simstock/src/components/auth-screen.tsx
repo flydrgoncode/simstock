@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { ExternalLink, Mail, ShieldCheck } from "lucide-react";
 
-export function AuthScreen() {
+export function AuthScreen({ allowSuperuserShortcut = false }: { allowSuperuserShortcut?: boolean }) {
   const [email, setEmail] = useState("");
   const [previewLink, setPreviewLink] = useState("");
   const [message, setMessage] = useState("");
@@ -28,6 +28,23 @@ export function AuthScreen() {
       setMessage(body.magicLinkPreview
         ? `Link gerado localmente. Expira em ${body.expiresAt ?? "breve"}.`
         : "Link de login enviado por email.");
+    });
+  }
+
+  async function shortcutSuperuserLogin() {
+    setError("");
+    setMessage("");
+    setPreviewLink("");
+    startTransition(async () => {
+      const response = await fetch("/api/auth/superuser-shortcut", {
+        method: "POST",
+      });
+      const body = await response.json() as { error?: string };
+      if (!response.ok) {
+        setError(body.error ?? "Nao foi possivel entrar como superuser.");
+        return;
+      }
+      window.location.href = "/";
     });
   }
 
@@ -100,6 +117,16 @@ export function AuthScreen() {
               >
                 Enviar magic link
               </button>
+              {allowSuperuserShortcut ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void shortcutSuperuserLogin()}
+                  className="rounded-full border border-emerald-300/30 bg-emerald-300/12 px-5 py-2.5 text-sm font-medium text-emerald-100 disabled:opacity-50"
+                >
+                  Entrar como superuser
+                </button>
+              ) : null}
             </div>
           </div>
         </section>

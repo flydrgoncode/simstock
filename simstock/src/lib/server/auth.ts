@@ -55,6 +55,53 @@ function findUserByEmail(email: string) {
   return getUsers().find((user) => normalizeEmail(user.email) === normalized) ?? null;
 }
 
+function findSuperuser() {
+  return getUsers().find((user) => user.role === "superuser") ?? null;
+}
+
+function createSessionForUser(user: SimstockUser, metadata?: { userAgent?: string | null; ipAddress?: string | null }) {
+  const token = randomBytes(32).toString("hex");
+  const createdAt = nowIso();
+  const expiresAt = addHours(new Date(), SESSION_TTL_HOURS).toISOString();
+  getDb().prepare(
+    `INSERT INTO auth_sessions (id, userId, tokenHash, createdAt, expiresAt, userAgent, ipAddress)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    randomUUID(),
+    user.id,
+    sha256(token),
+    createdAt,
+    expiresAt,
+    metadata?.userAgent ?? null,
+    metadata?.ipAddress ?? null,
+  );
+  setActiveUserId(user.id);
+  return { token, expiresAt };
+}
+
+function insertAuthLog(input: {
+  action: string;
+  entityId?: string | null;
+  status: "success" | "error" | "started";
+  message: string;
+  details?: string;
+}) {
+  getDb().prepare(`
+    INSERT INTO activity_logs (id, category, action, entityType, entityId, status, message, details, timestamp)
+    VALUES (@id, @category, @action, @entityType, @entityId, @status, @message, @details, @timestamp)
+  `).run({
+    id: randomUUID(),
+    category: "auth",
+    action: input.action,
+    entityType: "user",
+    entityId: input.entityId ?? null,
+    status: input.status,
+    message: input.message,
+    details: input.details ?? null,
+    timestamp: new Date().toLocaleString("pt-PT"),
+  });
+}
+
 function cleanupExpiredAuthRows() {
   const db = getDb();
   const now = nowIso();
@@ -105,13 +152,30 @@ export function getSessionCookieOptions() {
   };
 }
 
+export function isSuperuserShortcutEnabled() {
+  return process.env.ALLOW_SUPERUSER_SHORTCUT === "true" || process.env.NODE_ENV !== "production";
+}
+
 export function issueLoginCode(email: string) {
   cleanupExpiredAuthRows();
   const user = findUserByEmail(email);
   if (!user) {
+    insertAuthLog({
+      action: "request_code",
+      status: "error",
+      message: "Pedido de codigo falhou: utilizador nao encontrado.",
+      details: `email=${normalizeEmail(email)}`,
+    });
     throw new Error("Nao existe utilizador registado com esse email.");
   }
   const normalizedEmail = normalizeEmail(email);
+  insertAuthLog({
+    action: "request_code",
+    entityId: user.id,
+    status: "started",
+    message: "Pedido de codigo de login iniciado.",
+    details: `email=${normalizedEmail}`,
+  });
   const code = String(randomInt(0, 1000000)).padStart(6, "0");
   const now = new Date();
   const expiresAt = addMinutes(now, AUTH_CODE_TTL_MINUTES).toISOString();
@@ -120,6 +184,13 @@ export function issueLoginCode(email: string) {
   db.prepare(
     "INSERT INTO auth_codes (email, codeHash, expiresAt, createdAt) VALUES (?, ?, ?, ?)",
   ).run(normalizedEmail, sha256(code), expiresAt, now.toISOString());
+  insertAuthLog({
+    action: "request_code",
+    entityId: user.id,
+    status: "success",
+    message: "Codigo de login gerado com sucesso.",
+    details: `email=${normalizedEmail}; expiresAt=${expiresAt}`,
+  });
   return {
     email: normalizedEmail,
     expiresAt,
@@ -154,7 +225,11 @@ async function sendMagicLinkEmail(email: string, magicLink: string) {
     }),
   });
   if (!response.ok) {
-    throw new Error("Nao foi possivel enviar o email de login.");
+    const errorBody = await response.text().catch(() => "");
+    const trimmedBody = errorBody.slice(0, 1000);
+    throw new Error(
+      `Nao foi possivel enviar o email de login. Resend status=${response.status}${trimmedBody ? ` body=${trimmedBody}` : ""}`,
+    );
   }
   return {
     delivery: "email" as const,
@@ -166,9 +241,22 @@ export async function issueMagicLink(email: string) {
   cleanupExpiredAuthRows();
   const user = findUserByEmail(email);
   if (!user) {
+    insertAuthLog({
+      action: "request_magic_link",
+      status: "error",
+      message: "Pedido de magic link falhou: utilizador nao encontrado.",
+      details: `email=${normalizeEmail(email)}`,
+    });
     throw new Error("Nao existe utilizador registado com esse email.");
   }
   const normalizedEmail = normalizeEmail(email);
+  insertAuthLog({
+    action: "request_magic_link",
+    entityId: user.id,
+    status: "started",
+    message: "Pedido de magic link iniciado.",
+    details: `email=${normalizedEmail}`,
+  });
   const token = randomBytes(32).toString("hex");
   const tokenHash = sha256(token);
   const now = new Date();
@@ -180,7 +268,26 @@ export async function issueMagicLink(email: string) {
   db.prepare(
     "INSERT INTO auth_magic_links (email, tokenHash, expiresAt, createdAt, consumedAt) VALUES (?, ?, ?, ?, NULL)",
   ).run(normalizedEmail, tokenHash, expiresAt, now.toISOString());
-  const delivery = await sendMagicLinkEmail(normalizedEmail, magicLink);
+  let delivery;
+  try {
+    delivery = await sendMagicLinkEmail(normalizedEmail, magicLink);
+  } catch (error) {
+    insertAuthLog({
+      action: "request_magic_link",
+      entityId: user.id,
+      status: "error",
+      message: "Envio do magic link falhou.",
+      details: error instanceof Error ? error.message : "Erro desconhecido no envio do magic link.",
+    });
+    throw error;
+  }
+  insertAuthLog({
+    action: "request_magic_link",
+    entityId: user.id,
+    status: "success",
+    message: "Magic link gerado com sucesso.",
+    details: `email=${normalizedEmail}; delivery=${delivery.delivery}; expiresAt=${expiresAt}`,
+  });
   return {
     email: normalizedEmail,
     expiresAt,
@@ -194,6 +301,12 @@ export function verifyLoginCode(email: string, code: string, metadata?: { userAg
   const normalizedEmail = normalizeEmail(email);
   const user = findUserByEmail(normalizedEmail);
   if (!user) {
+    insertAuthLog({
+      action: "verify_code",
+      status: "error",
+      message: "Validacao de codigo falhou: utilizador nao encontrado.",
+      details: `email=${normalizedEmail}`,
+    });
     throw new Error("Utilizador nao encontrado.");
   }
   const codeHash = sha256(code.trim());
@@ -201,27 +314,25 @@ export function verifyLoginCode(email: string, code: string, metadata?: { userAg
     .prepare("SELECT * FROM auth_codes WHERE email = ? AND codeHash = ?")
     .get(normalizedEmail, codeHash) as AuthCodeRow | undefined;
   if (!row || new Date(row.expiresAt).getTime() <= Date.now()) {
+    insertAuthLog({
+      action: "verify_code",
+      entityId: user.id,
+      status: "error",
+      message: "Validacao de codigo falhou: codigo invalido ou expirado.",
+      details: `email=${normalizedEmail}`,
+    });
     throw new Error("Codigo invalido ou expirado.");
   }
-  const token = randomBytes(32).toString("hex");
-  const tokenHash = sha256(token);
-  const createdAt = nowIso();
-  const expiresAt = addHours(new Date(), SESSION_TTL_HOURS).toISOString();
   const db = getDb();
   db.prepare("DELETE FROM auth_codes WHERE email = ?").run(normalizedEmail);
-  db.prepare(
-    `INSERT INTO auth_sessions (id, userId, tokenHash, createdAt, expiresAt, userAgent, ipAddress)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    randomUUID(),
-    user.id,
-    tokenHash,
-    createdAt,
-    expiresAt,
-    metadata?.userAgent ?? null,
-    metadata?.ipAddress ?? null,
-  );
-  setActiveUserId(user.id);
+  const { token, expiresAt } = createSessionForUser(user, metadata);
+  insertAuthLog({
+    action: "verify_code",
+    entityId: user.id,
+    status: "success",
+    message: "Login por codigo concluido com sucesso.",
+    details: `email=${normalizedEmail}; expiresAt=${expiresAt}; ip=${metadata?.ipAddress ?? ""}`,
+  });
   return { token, user, expiresAt };
 }
 
@@ -232,37 +343,86 @@ export function verifyMagicLinkToken(token: string, metadata?: { userAgent?: str
     .prepare("SELECT * FROM auth_magic_links WHERE tokenHash = ?")
     .get(tokenHash) as AuthMagicLinkRow | undefined;
   if (!row || row.consumedAt || new Date(row.expiresAt).getTime() <= Date.now()) {
+    insertAuthLog({
+      action: "verify_magic_link",
+      status: "error",
+      message: "Validacao de magic link falhou: token invalido ou expirado.",
+    });
     throw new Error("Token invalido ou expirado.");
   }
   const user = findUserByEmail(row.email);
   if (!user) {
+    insertAuthLog({
+      action: "verify_magic_link",
+      status: "error",
+      message: "Validacao de magic link falhou: utilizador nao encontrado.",
+      details: `email=${normalizeEmail(row.email)}`,
+    });
     throw new Error("Utilizador nao encontrado.");
   }
   getDb().prepare("UPDATE auth_magic_links SET consumedAt = ? WHERE tokenHash = ?").run(nowIso(), tokenHash);
-  const sessionToken = randomBytes(32).toString("hex");
-  const createdAt = nowIso();
-  const expiresAt = addHours(new Date(), SESSION_TTL_HOURS).toISOString();
-  getDb().prepare(
-    `INSERT INTO auth_sessions (id, userId, tokenHash, createdAt, expiresAt, userAgent, ipAddress)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    randomUUID(),
-    user.id,
-    sha256(sessionToken),
-    createdAt,
-    expiresAt,
-    metadata?.userAgent ?? null,
-    metadata?.ipAddress ?? null,
-  );
-  setActiveUserId(user.id);
+  const { token: sessionToken, expiresAt } = createSessionForUser(user, metadata);
+  insertAuthLog({
+    action: "verify_magic_link",
+    entityId: user.id,
+    status: "success",
+    message: "Login por magic link concluido com sucesso.",
+    details: `email=${normalizeEmail(row.email)}; expiresAt=${expiresAt}; ip=${metadata?.ipAddress ?? ""}`,
+  });
   return { token: sessionToken, user, expiresAt };
+}
+
+export function loginAsSuperuser(metadata?: { userAgent?: string | null; ipAddress?: string | null }) {
+  if (!isSuperuserShortcutEnabled()) {
+    insertAuthLog({
+      action: "superuser_shortcut",
+      status: "error",
+      message: "Atalho de superuser bloqueado por configuracao.",
+    });
+    throw new Error("Atalho de superuser desativado.");
+  }
+  const user = findSuperuser();
+  if (!user) {
+    insertAuthLog({
+      action: "superuser_shortcut",
+      status: "error",
+      message: "Atalho de superuser falhou: nenhum superuser encontrado.",
+    });
+    throw new Error("Nao existe superuser configurado.");
+  }
+  insertAuthLog({
+    action: "superuser_shortcut",
+    entityId: user.id,
+    status: "started",
+    message: "Atalho de superuser iniciado.",
+    details: `email=${user.email}`,
+  });
+  const session = createSessionForUser(user, metadata);
+  insertAuthLog({
+    action: "superuser_shortcut",
+    entityId: user.id,
+    status: "success",
+    message: "Sessao de superuser criada com sucesso.",
+    details: `email=${user.email}; expiresAt=${session.expiresAt}; ip=${metadata?.ipAddress ?? ""}`,
+  });
+  return { ...session, user };
 }
 
 export function clearSessionByToken(token: string | null) {
   if (!token) {
     return;
   }
-  getDb().prepare("DELETE FROM auth_sessions WHERE tokenHash = ?").run(sha256(token));
+  const tokenHash = sha256(token);
+  const session = getDb()
+    .prepare("SELECT * FROM auth_sessions WHERE tokenHash = ?")
+    .get(tokenHash) as AuthSessionRow | undefined;
+  getDb().prepare("DELETE FROM auth_sessions WHERE tokenHash = ?").run(tokenHash);
+  insertAuthLog({
+    action: "logout",
+    entityId: session?.userId ?? null,
+    status: "success",
+    message: session ? "Sessao terminada com sucesso." : "Pedido de logout recebido sem sessao ativa.",
+  });
 }
 
 export function requireAuthenticatedRequest(request: Request) {

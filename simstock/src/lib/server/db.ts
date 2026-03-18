@@ -140,6 +140,41 @@ export type SimstockUser = {
   createdAt: string;
 };
 
+function getLlmSecretEnvVar(profileId?: string, provider?: string) {
+  const normalizedProvider = (provider ?? "").toLowerCase();
+  if (profileId === "llm-openai" || normalizedProvider.includes("openai")) {
+    return "OPENAI_API_KEY";
+  }
+  if (profileId === "llm-claude" || normalizedProvider.includes("claude") || normalizedProvider.includes("anthropic")) {
+    return "ANTHROPIC_API_KEY";
+  }
+  if (profileId === "llm-ollama-local" || normalizedProvider.includes("ollama")) {
+    return "OLLAMA_API_KEY";
+  }
+  return "LLM_API_KEY";
+}
+
+function buildLlmProfile(profile: {
+  id: string;
+  name: string;
+  provider: string;
+  model: string;
+  endpoint: string;
+  local: boolean;
+  temperature: number;
+  maxTokens: number;
+}) {
+  const secretEnvVar = getLlmSecretEnvVar(profile.id, profile.provider);
+  const secretConfigured = Boolean(process.env[secretEnvVar]?.trim()) || profile.local;
+  return {
+    ...profile,
+    apiKey: "",
+    secretConfigured,
+    secretEnvVar,
+    secretLocationHint: "Editar manualmente no ficheiro .env da app ou nos secrets do servidor.",
+  };
+}
+
 const dataDir = path.join(process.cwd(), "data");
 const dbPath = path.join(dataDir, "simstock.db");
 
@@ -385,48 +420,42 @@ export function initDb() {
     };
     const existingProfiles = parsed.llmProfiles ?? [];
     const byId = new Map(existingProfiles.map((profile) => [profile.id, profile]));
-    const normalizedOllamaModel =
-      byId.get("llm-ollama-local")?.model && byId.get("llm-ollama-local")?.model !== "gpt-4.1-mini"
-        ? byId.get("llm-ollama-local")?.model
-        : "qwen2.5:7b";
+    const ollamaModel = byId.get("llm-ollama-local")?.model;
+    const claudeModel = byId.get("llm-claude")?.model;
+    const normalizedOllamaModel = ollamaModel && ollamaModel !== "gpt-4.1-mini" ? ollamaModel : "qwen2.5:7b";
     const normalizedClaudeModel =
-      byId.get("llm-claude")?.model && byId.get("llm-claude")?.model !== "claude-3-5-sonnet-latest"
-        ? byId.get("llm-claude")?.model
-        : "claude-sonnet-4-6";
+      claudeModel && claudeModel !== "claude-3-5-sonnet-latest" ? claudeModel : "claude-sonnet-4-6";
     const llmProfiles = [
-      {
+      buildLlmProfile({
         id: "llm-openai",
         name: "OpenAI",
         provider: "OpenAI",
         model: byId.get("llm-openai")?.model ?? "gpt-4.1",
         endpoint: byId.get("llm-openai")?.endpoint ?? "https://api.openai.com/v1",
-        apiKey: byId.get("llm-openai")?.apiKey ?? "",
         local: false,
         temperature: byId.get("llm-openai")?.temperature ?? 0.2,
         maxTokens: byId.get("llm-openai")?.maxTokens ?? 1200,
-      },
-      {
+      }),
+      buildLlmProfile({
         id: "llm-claude",
         name: "Claude",
         provider: "Claude",
         model: normalizedClaudeModel,
         endpoint: byId.get("llm-claude")?.endpoint ?? "https://api.anthropic.com/v1",
-        apiKey: byId.get("llm-claude")?.apiKey ?? "",
         local: false,
         temperature: byId.get("llm-claude")?.temperature ?? 0.2,
         maxTokens: byId.get("llm-claude")?.maxTokens ?? 1200,
-      },
-      {
+      }),
+      buildLlmProfile({
         id: "llm-ollama-local",
         name: "Ollama Local",
         provider: "Ollama",
         model: normalizedOllamaModel,
         endpoint: byId.get("llm-ollama-local")?.endpoint ?? parsed.llm?.endpoint ?? "http://localhost:11434/v1",
-        apiKey: byId.get("llm-ollama-local")?.apiKey ?? parsed.llm?.apiKey ?? "",
         local: true,
         temperature: byId.get("llm-ollama-local")?.temperature ?? parsed.llm?.temperature ?? 0.35,
         maxTokens: byId.get("llm-ollama-local")?.maxTokens ?? parsed.llm?.maxTokens ?? 900,
-      },
+      }),
     ];
     const activeLlmId = parsed.activeLlmId ?? llmProfiles[0]?.id ?? "llm-openai";
     const activeLlm = llmProfiles.find((profile) => profile.id === activeLlmId) ?? llmProfiles[0];

@@ -54,6 +54,9 @@ export type AppSettings = ReturnType<typeof getSettings<{
     model: string;
     endpoint: string;
     apiKey?: string;
+    secretConfigured?: boolean;
+    secretEnvVar?: string;
+    secretLocationHint?: string;
     local: boolean;
     temperature: number;
     maxTokens: number;
@@ -65,6 +68,9 @@ export type AppSettings = ReturnType<typeof getSettings<{
     model: string;
     endpoint: string;
     apiKey?: string;
+    secretConfigured?: boolean;
+    secretEnvVar?: string;
+    secretLocationHint?: string;
     local: boolean;
     temperature: number;
     maxTokens: number;
@@ -274,7 +280,7 @@ export function getDashboardState() {
   persistActiveUserBusinessDataset();
 
   return {
-    version: "v1.41",
+    version: "v1.44",
     generatedAt: new Date().toISOString(),
     indices,
     chartHistory: buildNormalizedHistory(),
@@ -519,10 +525,7 @@ export function normalizeSettings(partial: Partial<AppSettings>) {
     return {
       ...currentProfile,
       ...profile,
-      apiKey:
-        typeof profile.apiKey === "string" && profile.apiKey.trim().length === 0
-          ? (currentProfile?.apiKey ?? "")
-          : (profile.apiKey ?? currentProfile?.apiKey ?? ""),
+      apiKey: "",
     };
   });
   const next = {
@@ -569,6 +572,36 @@ function redactLlmSecrets(settings: AppSettings): AppSettings {
       ...activeProfile,
       apiKey: "",
     },
+  };
+}
+
+function getLlmSecretEnvVar(profile: LlmProfile | undefined | null) {
+  const profileId = profile?.id ?? "";
+  const provider = (profile?.provider ?? "").toLowerCase();
+  if (profileId === "llm-openai" || provider.includes("openai")) {
+    return "OPENAI_API_KEY";
+  }
+  if (profileId === "llm-claude" || provider.includes("claude") || provider.includes("anthropic")) {
+    return "ANTHROPIC_API_KEY";
+  }
+  if (profileId === "llm-ollama-local" || provider.includes("ollama")) {
+    return "OLLAMA_API_KEY";
+  }
+  return "LLM_API_KEY";
+}
+
+function resolveLlmApiKey(profile: LlmProfile | undefined | null) {
+  const envVar = getLlmSecretEnvVar(profile);
+  return process.env[envVar]?.trim() ?? "";
+}
+
+function materializeLlmProfile(profile: LlmProfile) {
+  return {
+    ...profile,
+    apiKey: resolveLlmApiKey(profile),
+    secretConfigured: Boolean(resolveLlmApiKey(profile)) || Boolean(profile.local),
+    secretEnvVar: getLlmSecretEnvVar(profile),
+    secretLocationHint: "Editar manualmente no ficheiro .env da app ou nos secrets do servidor.",
   };
 }
 
@@ -3057,13 +3090,14 @@ function isUsableLlmProfile(profile: LlmProfile | undefined | null) {
   if (!profile) {
     return false;
   }
+  const apiKey = resolveLlmApiKey(profile);
   const providerName = (profile.provider ?? "").toLowerCase();
   const endpoint = (profile.endpoint ?? "").toLowerCase();
   const isLocal = Boolean(profile.local) || providerName.includes("ollama") || endpoint.includes("11434");
   if (isLocal) {
     return Boolean(profile.endpoint && profile.model);
   }
-  return Boolean(profile.endpoint && profile.model && profile.apiKey);
+  return Boolean(profile.endpoint && profile.model && apiKey);
 }
 
 function resolveLlmProfile(
@@ -3075,7 +3109,7 @@ function resolveLlmProfile(
   const activeProfile = profiles.find((profile) => profile.id === settings.activeLlmId) ?? profiles[0];
   if (isUsableLlmProfile(activeProfile)) {
     return {
-      profile: activeProfile,
+      profile: materializeLlmProfile(activeProfile),
       fallbackUsed: false,
       reason: `${labelLlmProfile(activeProfile)} ativo e operacional para ${target}.`,
     };
@@ -3086,7 +3120,7 @@ function resolveLlmProfile(
   }
 
   return {
-    profile: activeProfile,
+    profile: materializeLlmProfile(activeProfile),
     fallbackUsed: false,
     reason: `${labelLlmProfile(activeProfile)} permanece configurado para ${target}, mas nao esta operacional.`,
   };
@@ -3097,7 +3131,7 @@ function resolveLlmCandidateProfiles(settings: AppSettings) {
     (settings.llmProfiles.length > 0 ? settings.llmProfiles : [settings.llm]).find((profile) => profile.id === settings.activeLlmId) ??
     settings.llmProfiles[0] ??
     settings.llm;
-  return isUsableLlmProfile(activeProfile) ? [activeProfile] : [];
+  return isUsableLlmProfile(activeProfile) ? [materializeLlmProfile(activeProfile)] : [];
 }
 
 function labelLlmProfile(profile: LlmProfile) {

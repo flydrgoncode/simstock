@@ -104,6 +104,9 @@ type AppState = {
       model: string;
       endpoint: string;
       apiKey?: string;
+      secretConfigured?: boolean;
+      secretEnvVar?: string;
+      secretLocationHint?: string;
       local: boolean;
       temperature: number;
       maxTokens: number;
@@ -115,6 +118,9 @@ type AppState = {
       model: string;
       endpoint: string;
       apiKey?: string;
+      secretConfigured?: boolean;
+      secretEnvVar?: string;
+      secretLocationHint?: string;
       local: boolean;
       temperature: number;
       maxTokens: number;
@@ -2442,25 +2448,27 @@ export function SimStockApp({ initialState }: { initialState: AppState }) {
                           )
                         }
                       />
-                      <FieldBlock
-                        label="API key"
-                        value={selectedLlmProvider.apiKey ?? ""}
-                        onChange={(value) =>
-                          setState((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  settings: {
-                                    ...current.settings,
-                                    llmProfiles: current.settings.llmProfiles.map((item) =>
-                                      item.id === selectedLlmProvider.id ? { ...item, apiKey: value } : item,
-                                    ),
-                                  },
-                                }
-                              : current,
-                          )
-                        }
-                      />
+                      <div className="rounded-[24px] border border-white/8 bg-slate-950/25 p-4 md:col-span-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-medium text-white">Secret da app</div>
+                            <div className="mt-1 text-xs text-slate-400">
+                              A key nao aparece no backoffice nem fica guardada nas settings.
+                            </div>
+                          </div>
+                          <StatusPill open={Boolean(selectedLlmProvider.secretConfigured)}>
+                            {selectedLlmProvider.secretConfigured ? "Secret configured" : "Secret missing"}
+                          </StatusPill>
+                        </div>
+                        <div className="mt-3 text-sm text-slate-300">
+                          {selectedLlmProvider.secretEnvVar
+                            ? `Env var: ${selectedLlmProvider.secretEnvVar}`
+                            : "Env var nao definida."}
+                        </div>
+                        <div className="mt-2 text-xs text-slate-400">
+                          {selectedLlmProvider.secretLocationHint ?? "Editar manualmente no ficheiro .env da app ou nos secrets do servidor."}
+                        </div>
+                      </div>
                     </div>
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <ActionChip onClick={() => void testLlmDialog(selectedLlmProvider.id ?? "")}><Bot size={14} /> Test online</ActionChip>
